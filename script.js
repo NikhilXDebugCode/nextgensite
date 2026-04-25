@@ -589,46 +589,35 @@ function copyEmail(email) {
 })();
 
 // ===========================
-// APPLICATION FORM — AJAX SUBMIT → redirect to thankyou.html
-// Prevents FormSubmit from redirecting to their own homepage
+// APPLICATION FORM — NATIVE POST (supports file/resume attachments)
+// FormSubmit's /ajax/ endpoint strips attachments; native POST includes them.
+// The _next hidden field in the form handles redirect to thankyou.html.
 // ===========================
 (function () {
   var appForm = document.getElementById('application-form');
   if (!appForm) return;
 
   appForm.addEventListener('submit', function (e) {
-    e.preventDefault();   // Stop native FormSubmit navigation
-
-    // Validate required fields
+    // Validate required fields first
     var ok = true;
     appForm.querySelectorAll('[required]').forEach(function (fi) {
       var v = fi.value ? fi.value.trim() : '';
       if (!v) { fi.classList.add('field-invalid'); ok = false; }
     });
+
     if (!ok) {
+      e.preventDefault(); // Block submission only if validation fails
       if (typeof showToast === 'function') showToast('Please fill all required fields.', 'error');
       return;
     }
 
-    // UI feedback
+    // Validation passed — show loading feedback, then allow native form POST
+    // (native POST sends file attachments correctly via multipart/form-data)
     var btn = appForm.querySelector('button[type="submit"]');
     if (btn) { btn.textContent = 'Submitting\u2026'; btn.disabled = true; btn.style.opacity = '0.7'; }
 
-    // Send via FormData (supports file uploads)
-    var fd = new FormData(appForm);
-
-    fetch('https://formsubmit.co/ajax/careers@nextgenforgetechnologies.com', {
-      method: 'POST',
-      body: fd,
-      headers: { Accept: 'application/json' }
-    })
-    .then(function () {
-      window.location.href = 'thankyou.html';
-    })
-    .catch(function () {
-      // Redirect regardless — FormSubmit may still deliver the email
-      window.location.href = 'thankyou.html';
-    });
+    // Do NOT call e.preventDefault() here — let the browser POST natively.
+    // FormSubmit will receive the resume attachment and redirect to _next URL.
   });
 })();
 

@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /application.html
 
-Sitemap: https://www.nextgenforge.tech/sitemap.xml
+Sitemap: https://www.nextgenforgetechnologies.com/sitemap.xml

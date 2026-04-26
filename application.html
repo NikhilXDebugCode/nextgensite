@@ -236,6 +236,22 @@ function handleFileSelect(input) {
     nameEl.style.display = 'block';
   }
 }
+
+// If coming from Internship Program card, append "(Internship)" to all role options
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('type') === 'internship') {
+    const roleSelect = document.getElementById('role');
+    if (roleSelect) {
+      Array.from(roleSelect.options).forEach(function(opt) {
+        if (opt.value !== '') {
+          opt.text = opt.text + ' (Internship)';
+          opt.value = opt.value + ' (Internship)';
+        }
+      });
+    }
+  }
+})();
 </script>
 </body>
 </html>

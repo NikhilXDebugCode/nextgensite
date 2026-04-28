@@ -252,6 +252,65 @@ function handleFileSelect(input) {
     }
   }
 })();
+
+// ===========================
+// GOOGLE SHEETS INTEGRATION
+// Sends form data to the correct Google Sheet in the background.
+// Does NOT call e.preventDefault() — native POST to FormSubmit is untouched.
+// Wrapped in try/catch — if anything fails, the email submission continues normally.
+// ===========================
+(function () {
+  var INTERNSHIP_WEBHOOK  = 'https://script.google.com/macros/s/AKfycbwEeFaZo97rge-aoN6pcA5fKs5uGghRm2b_s38Fq1jQkzlMWHUBwCR7EcHqKblyzDkZTA/exec';
+  var OPEN_ROLES_WEBHOOK  = 'https://script.google.com/macros/s/AKfycbwvzAAevE1zQkTjOY-MmosMVVizRFm2_ctTsBUXf90jn1vP7ZjCLe_Z3zVFhmj6Epig/exec';
+
+  var appForm = document.getElementById('application-form');
+  if (!appForm) return;
+
+  appForm.addEventListener('submit', function () {
+    try {
+      // Only send if the form passes native HTML5 validation
+      if (!appForm.checkValidity()) return;
+
+      // Determine which sheet to target based on URL param
+      var isInternship = new URLSearchParams(window.location.search).get('type') === 'internship';
+      var webhookUrl   = isInternship ? INTERNSHIP_WEBHOOK : OPEN_ROLES_WEBHOOK;
+
+      // Collect field values
+      var g  = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+      var durationEl  = appForm.querySelector('input[name="duration"]:checked');
+      var resumeInput = document.getElementById('resume');
+      var resumeLink  = (resumeInput && resumeInput.files && resumeInput.files[0]) ? resumeInput.files[0].name : '';
+      var submittedOn = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+      var payload = JSON.stringify({
+        'First Name':          g('fname'),
+        'Last Name':           g('lname'),
+        'Email Address':       g('email'),
+        'Mobile Phone':        g('mobile'),
+        'Place You Live In':   g('place'),
+        'Course':              g('course'),
+        'Degree':              g('course'),
+        'Year of Passing':     g('yop'),
+        'Role Applying For':   g('role'),
+        'Internship Duration': durationEl ? durationEl.value : '',
+        'About Yourself':      (appForm.querySelector('textarea[name="about_yourself"]') || {}).value || '',
+        'Resume Link':         resumeLink,
+        'Submitted On':        submittedOn
+      });
+
+      // sendBeacon fires even as the page navigates away (best for native POST forms)
+      // Fallback: fetch with keepalive:true
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(webhookUrl, new Blob([payload], { type: 'application/json' }));
+      } else {
+        fetch(webhookUrl, { method: 'POST', body: payload, headers: { 'Content-Type': 'application/json' }, keepalive: true });
+      }
+    } catch (err) {
+      // Silent fail — email submission continues normally regardless
+    }
+    // ⚠️ Do NOT call e.preventDefault() here — native POST to FormSubmit must proceed
+  });
+})();
 </script>
 </body>
 </html>
